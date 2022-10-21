@@ -16,9 +16,17 @@ public class Resolver {
     public native int Add(int a, int b);
 
 
-    public native String Query();
+    public native String Query(String queryPath);
 
 
     public native Object QueryObject();
+
+
+    public native String QueryChannelsNext(String queryPath,int fromEventRecordId);
+    public native String QueryChannelsPrev(String queryPath,int fromEventRecordId);
+
+    public native int GetTotalLogsFromChannel(String queryPath);
+
+
 
 }
