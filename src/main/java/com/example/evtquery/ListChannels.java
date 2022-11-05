@@ -1,24 +1,43 @@
 package com.example.evtquery;
 import Resolvers.Resolver;
+import com.example.evtquery.Entity.Event;
+import com.example.evtquery.Service.EventService;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
-import com.github.fge.jackson.JsonLoader;
-import org.json.JSONException;
-import org.json.XML;
-import org.json.JSONObject;
-import org.json.XMLTokener;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 import java.io.File;
-import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+
+
+class EventParams{
+    @JsonProperty("Event")
+    List<Event> event;
+
+    @Override
+    public String toString() {
+        return "EventParams{" +
+                "event=" + event +
+                '}';
+    }
+}
 
 
 @CrossOrigin(origins = "*")
 @RestController
 public class ListChannels {
+
+    @Autowired
+    private EventService eventService;
 
     @GetMapping("/")
     public String index() {
@@ -44,12 +63,6 @@ public class ListChannels {
             }
 
             System.out.println(query);
-            String test = "<note>\n" +
-                    "<to>Tove</to>\n" +
-                    "<from>Jani</from>\n" +
-                    "<heading>Reminder</heading>\n" +
-                    "<body>Don't forget me this weekend!</body>\n" +
-                    "</note>";
             String res = new Resolver().Query(query);
 
             System.out.println(res);
@@ -87,12 +100,6 @@ public class ListChannels {
             }
 
             System.out.println(query);
-            String test = "<note>\n" +
-                    "<to>Tove</to>\n" +
-                    "<from>Jani</from>\n" +
-                    "<heading>Reminder</heading>\n" +
-                    "<body>Don't forget me this weekend!</body>\n" +
-                    "</note>";
             String res = new Resolver().QueryChannelsNext(query,fromEventRecordId);
 
             System.out.println(res);
@@ -165,6 +172,71 @@ public class ListChannels {
             return e.getMessage();
         }
     }
+
+
+
+    @GetMapping("/Get")
+    public EventParams GetEvents(){
+        try{
+
+            List<Event> events = new ArrayList<>();
+
+            events = this.eventService.ListEvents();
+
+            events.sort(new Comparator<Event>() {
+                @Override
+                public int compare(Event ev1, Event ev2) {
+                    return (
+                            Integer.parseInt(ev2.system.eventRecordID) -
+                            Integer.parseInt(ev1.system.eventRecordID)
+                            );
+                }
+            });
+
+            EventParams eventParams = new EventParams();
+            eventParams.event = events;
+            return eventParams;
+
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @PostMapping("/Refresh")
+    public ResponseEntity<String> RefreshEvents(){
+        try{
+            String res = new Resolver().GetEvents("Security");
+
+//            System.out.println(res);
+//            Convert XML-formatted String to JSON
+            XmlMapper xml = new XmlMapper();
+            JsonNode node = xml.readTree(res);
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+            EventParams eventList = mapper.readValue(node.toString(),EventParams.class);
+
+            for(Event event : eventList.event){
+                try{
+                    this.eventService.Save(event);
+                }catch (Exception e){
+
+                }
+            }
+
+            return new ResponseEntity<>("OK", HttpStatus.OK);
+
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return new ResponseEntity<>("FAILED", HttpStatus.BAD_REQUEST);
+
+    }
+
+
 
 
 

@@ -55,6 +55,14 @@ JNIEXPORT jstring JNICALL Java_Resolvers_Resolver_QueryChannelsPrev
 JNIEXPORT jint JNICALL Java_Resolvers_Resolver_GetTotalLogsFromChannel
   (JNIEnv *, jobject, jstring);
 
+/*
+ * Class:     Resolvers_Resolver
+ * Method:    GetEvents
+ * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_Resolvers_Resolver_GetEvents
+  (JNIEnv *, jobject, jstring);
+
 #ifdef __cplusplus
 }
 #endif

@@ -9,7 +9,7 @@ public class Resolver {
         String currentDirectory = new File("./").getAbsolutePath();
         String path = Path.of(currentDirectory
                 .substring(0,currentDirectory.length()-2),
-                "src/main/java/Resolvers/resolver.dll").toString();
+                "src/main/java/Resolvers/EVT_Query.dll").toString();
         System.load(path);
     }
 
@@ -26,6 +26,11 @@ public class Resolver {
     public native String QueryChannelsPrev(String queryPath,int fromEventRecordId);
 
     public native int GetTotalLogsFromChannel(String queryPath);
+
+
+    public native String GetEvents(String queryPath);
+
+
 
 
 
