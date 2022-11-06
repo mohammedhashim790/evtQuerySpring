@@ -31,7 +31,7 @@ public class Resolver {
     public native String GetEvents(String queryPath);
 
 
-
+    public native void FetchAllData(String queryPath);
 
 
 }

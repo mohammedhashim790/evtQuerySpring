@@ -173,8 +173,6 @@ public class ListChannels {
         }
     }
 
-
-
     @GetMapping("/Get")
     public EventParams GetEvents(){
         try{
@@ -236,6 +234,16 @@ public class ListChannels {
 
     }
 
+
+
+    public void EventReceiver(byte[] input){
+        String res = new String(input);
+
+        System.out.println("Recieved");
+        System.out.println(res.length());
+
+
+    }
 
 
 
