@@ -22,7 +22,7 @@ public class Resolver {
     public native Object QueryObject();
 
 
-    public native String QueryChannelsNext(String queryPath,int fromEventRecordId);
+    public native void QueryChannelsNext(String queryPath,int fromEventRecordId);
     public native String QueryChannelsPrev(String queryPath,int fromEventRecordId);
 
     public native int GetTotalLogsFromChannel(String queryPath);

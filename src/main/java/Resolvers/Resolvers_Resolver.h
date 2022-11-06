@@ -34,9 +34,9 @@ JNIEXPORT jobject JNICALL Java_Resolvers_Resolver_QueryObject
 /*
  * Class:     Resolvers_Resolver
  * Method:    QueryChannelsNext
- * Signature: (Ljava/lang/String;I)Ljava/lang/String;
+ * Signature: (Ljava/lang/String;I)V
  */
-JNIEXPORT jstring JNICALL Java_Resolvers_Resolver_QueryChannelsNext
+JNIEXPORT void JNICALL Java_Resolvers_Resolver_QueryChannelsNext
   (JNIEnv *, jobject, jstring, jint);
 
 /*
@@ -66,9 +66,9 @@ JNIEXPORT jstring JNICALL Java_Resolvers_Resolver_GetEvents
 /*
  * Class:     Resolvers_Resolver
  * Method:    FetchAllData
- * Signature: (Ljava/lang/String;)Ljava/lang/String;
+ * Signature: (Ljava/lang/String;)V
  */
-JNIEXPORT jstring JNICALL Java_Resolvers_Resolver_FetchAllData
+JNIEXPORT void JNICALL Java_Resolvers_Resolver_FetchAllData
   (JNIEnv *, jobject, jstring);
 
 #ifdef __cplusplus

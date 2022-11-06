@@ -5,7 +5,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "event",uniqueConstraints = @UniqueConstraint(columnNames = {"eventRecordID"}))
+@Table(name = "event")
+//uniqueConstraints = @UniqueConstraint(columnNames = {"eventRecordID"})
 public class Event {
 
     @javax.persistence.Id

@@ -12,11 +12,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Nullable;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 
 class EventParams{
@@ -39,6 +37,11 @@ public class ListChannels {
     @Autowired
     private EventService eventService;
 
+    private static Queue<String> events = new LinkedList<String>();
+
+    private Thread thread;
+    private boolean heapOver = false;
+
     @GetMapping("/")
     public String index() {
         return new File("./").getAbsolutePath();
@@ -56,24 +59,17 @@ public class ListChannels {
      * @return
      */
     @GetMapping("/List/{query}")
-    public String List(@PathVariable(value="query") String query) {
+    public List<Event> List(
+            @PathVariable(value="query") String query,
+            @RequestParam(defaultValue = "0") int page
+    ) {
         try{
-            if(query.isEmpty()){
-                return "Invalid Query Param";
-            }
-
-            System.out.println(query);
-            String res = new Resolver().Query(query);
-
-            System.out.println(res);
-//            Convert XML-formatted String to JSON
-            XmlMapper xml = new XmlMapper();
-            JsonNode node = xml.readTree(res);
-
-            return node.toPrettyString();
+            System.out.println(page);
+            return this.eventService.ListEvents(page);
         }catch (Exception e)
         {
-            return e.getMessage();
+            e.printStackTrace();
+            return new ArrayList<>();
         }
     }
 
@@ -90,27 +86,35 @@ public class ListChannels {
      * @return
      */
     @GetMapping("/List/Next/{query}/{fromEventRecordId}")
-    public String NextList(
+    public void NextList(
             @PathVariable(value="query") String query,
             @PathVariable(value="fromEventRecordId") int fromEventRecordId
     ) {
         try{
-            if(query.isEmpty()){
-                return "Invalid Query Param";
-            }
+            heapOver = false;
+            thread = new Thread(){
+                @Override
+                public void run() {
+                    System.out.println("Persistence Thread started");
+                    while(!events.isEmpty() || !heapOver){
+                        PersistData();
+                    }
 
-            System.out.println(query);
-            String res = new Resolver().QueryChannelsNext(query,fromEventRecordId);
+                    System.out.println("***************************");
+                    System.out.println("\n\nThread Finished \n\n ");
+                    System.out.println("***************************");
 
-            System.out.println(res);
-//            Convert XML-formatted String to JSON
-            XmlMapper xml = new XmlMapper();
-            JsonNode node = xml.readTree(res);
+                }
+            };
+            thread.setDaemon(true);
+            thread.start();
+            new Resolver().QueryChannelsNext(query,fromEventRecordId);
 
-            return node.toPrettyString();
+            heapOver = true;
+
         }catch (Exception e)
         {
-            return e.getMessage();
+            e.getMessage();
         }
     }
 
@@ -173,61 +177,44 @@ public class ListChannels {
         }
     }
 
-    @GetMapping("/Get")
-    public EventParams GetEvents(){
-        try{
-
-            List<Event> events = new ArrayList<>();
-
-            events = this.eventService.ListEvents();
-
-            events.sort(new Comparator<Event>() {
-                @Override
-                public int compare(Event ev1, Event ev2) {
-                    return (
-                            Integer.parseInt(ev2.system.eventRecordID) -
-                            Integer.parseInt(ev1.system.eventRecordID)
-                            );
-                }
-            });
-
-            EventParams eventParams = new EventParams();
-            eventParams.event = events;
-            return eventParams;
-
-
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-        return null;
-    }
-
     @PostMapping("/Refresh")
     public ResponseEntity<String> RefreshEvents(){
         try{
-            String res = new Resolver().GetEvents("Security");
+//            String res = new Resolver().GetEvents("Security");
+
+            heapOver = false;
+            thread = new Thread(){
+                @Override
+                public void run() {
+                    System.out.println("Persistence Thread started");
+                    while(!events.isEmpty() || !heapOver){
+                        PersistData();
+                    }
+
+                    System.out.println("***************************");
+                    System.out.println("\n\nThread Finished \n\n ");
+                    System.out.println("***************************");
+
+                }
+            };
+            thread.setDaemon(true);
+            thread.start();
+            new Resolver().FetchAllData("Security");
+
+            heapOver = true;
 
 //            System.out.println(res);
 //            Convert XML-formatted String to JSON
-            XmlMapper xml = new XmlMapper();
-            JsonNode node = xml.readTree(res);
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-            EventParams eventList = mapper.readValue(node.toString(),EventParams.class);
 
-            for(Event event : eventList.event){
-                try{
-                    this.eventService.Save(event);
-                }catch (Exception e){
 
-                }
-            }
 
             return new ResponseEntity<>("OK", HttpStatus.OK);
 
 
         }catch (Exception e){
+            heapOver = true;
+            thread = null;
             e.printStackTrace();
         }
         return new ResponseEntity<>("FAILED", HttpStatus.BAD_REQUEST);
@@ -235,16 +222,77 @@ public class ListChannels {
     }
 
 
+    @GetMapping("/test")
+    public void Test() {
+        new Resolver().FetchAllData("Security");
+    }
 
-    public void EventReceiver(byte[] input){
+
+
+    private static void EventReceiver(byte[] input){
         String res = new String(input);
 
-        System.out.println("Recieved");
-        System.out.println(res.length());
-
+//        System.out.println("Recieved");
+//        System.out.println(res.length());
+        if(events!=null && res.length()>0)
+            events.add(res);
 
     }
 
+    private void PersistData(){
+        if(!events.isEmpty()){
+            try{
+                String res = events.poll();
+                XmlMapper xml = new XmlMapper();
+                JsonNode node = xml.readTree(res);
+                ObjectMapper mapper = new ObjectMapper();
+                mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+                EventParams eventList = mapper.readValue(node.toString(),EventParams.class);
+
+                for(Event event : eventList.event) {
+                    try {
+                        this.eventService.Save(event);
+                    } catch (Exception e) {
+
+                    }
+                }
+
+            }catch (Exception e){
+//                System.err.println(e);
+            }
+        }
+    }
+
+
+//    @GetMapping("/Get")
+//    public EventParams GetEvents(){
+//        try{
+//
+//            List<Event> events = new ArrayList<>();
+//
+//            events = this.eventService.ListEvents();
+//
+//            events.sort(new Comparator<Event>() {
+//                @Override
+//                public int compare(Event ev1, Event ev2) {
+//                    return (
+//                            Integer.parseInt(ev2.system.eventRecordID) -
+//                                    Integer.parseInt(ev1.system.eventRecordID)
+//                    );
+//                }
+//            });
+//
+//            EventParams eventParams = new EventParams();
+//            eventParams.event = events;
+//            return eventParams;
+//
+//
+//        }catch (Exception e){
+//            e.printStackTrace();
+//        }
+//        return null;
+//    }
 
 
 

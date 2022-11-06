@@ -2,9 +2,12 @@ package com.example.evtquery.Service;
 
 import com.example.evtquery.Entity.Event;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class EventService implements IEvent{
@@ -13,8 +16,9 @@ public class EventService implements IEvent{
     private IEventRepository eventRepository;
 
     @Override
-    public List<Event> ListEvents() {
-        return this.eventRepository.findAll();
+    public List<Event> ListEvents(int pageNumber) {
+        return this.eventRepository.findAll(
+                PageRequest.of(pageNumber, 25, Sort.by(Sort.Direction.DESC,"System.eventRecordID"))).get().collect(Collectors.toList());
     }
 
     @Override

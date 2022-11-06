@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface IEvent {
 
-    List<Event> ListEvents();
+    List<Event> ListEvents(int pageNumber);
 
     Event GetEventById(Long Id);
 
@@ -16,5 +16,7 @@ public interface IEvent {
 
 
     List<Event> Save(List<Event> event);
+
+
 
 }
